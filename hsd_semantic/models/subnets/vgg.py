@@ -3,6 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from hsd_semantic.tools import decompose_network, TreeNode
+from hsd_semantic.config import config
 
 class vgg_hsd(nn.Module):
     def __init__(self, ckpt_path=None):
@@ -10,6 +11,10 @@ class vgg_hsd(nn.Module):
         convModel, linearModel, cl_arr_ind, subnet_cls, root = decompose_network()
         self.features = convModel
         self.classifier = linearModel
+        self.subnet_classes = subnet_cls
+        self.subnet_mask = []
+        for i in range(len(subnet_cls)):
+            self.subnet_mask.append(torch.FloatTensor([1 if j in subnet_cls[i] else 0 for j in range(config.DATASET.NUM_CLASSES)]))
         self.indices = torch.LongTensor(cl_arr_ind)
         self.root = root
  

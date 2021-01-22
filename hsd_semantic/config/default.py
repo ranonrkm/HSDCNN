@@ -55,8 +55,8 @@ _C.SOLVER.SEPARATE = False  # for hsd-cnn, consider subnet predictions separatel
 # Hierarchy
 # -----------------------------------------------------------------------------
 _C.HIERARCHY = CN()
-_C.HIERARCHY.ROOT = '/scratch/16ee35016/MTP/hsd_semantic/hierarchy' 
 _C.HIERARCHY.BETA = 10
+_C.HIERARCHY.ROOT = '/scratch/16ee35016/HSDCNN/hsd_semantic/hierarchy'
 """
 if __name__ == "__main__":
     import sys

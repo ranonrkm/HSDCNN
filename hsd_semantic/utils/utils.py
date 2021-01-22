@@ -1,11 +1,5 @@
-'''Some helper functions for PyTorch, including:
-    - get_mean_and_std: calculate the mean and std value of dataset.
-    - msr_init: net parameter initialization.
-    - progress_bar: progress bar mimic xlua.progress.
-'''
 import os
 import sys
-import shutil
 import time
 import math
 import numpy as np
@@ -16,118 +10,88 @@ from torch.optim.lr_scheduler import _LRScheduler
 from torch.autograd import Variable
 from collections import OrderedDict
 from sklearn.neighbors import NearestNeighbors
+import random
+import shutil
+import time
+import warnings
+import datetime
+from hsd_semantic.config import config
 
-def get_mean_and_std(dataset):
-    '''Compute the mean and std value of dataset.'''
-    dataloader = torch.utils.data.DataLoader(dataset, batch_size=1, shuffle=True, num_workers=2)
-    mean = torch.zeros(3)
-    std = torch.zeros(3)
-    print('==> Computing mean and std..')
-    for inputs, targets in dataloader:
-        for i in range(3):
-            mean[i] += inputs[:,i,:,:].mean()
-            std[i] += inputs[:,i,:,:].std()
-    mean.div_(len(dataset))
-    std.div_(len(dataset))
-    return mean, std
+x = datetime.datetime.now()
 
-def init_params(net):
-    '''Init layer parameters.'''
-    for m in net.modules():
-        if isinstance(m, nn.Conv2d):
-            init.kaiming_normal(m.weight, mode='fan_out')
-            if m.bias:
-                init.constant(m.bias, 0)
-        elif isinstance(m, nn.BatchNorm2d):
-            init.constant(m.weight, 1)
-            init.constant(m.bias, 0)
-        elif isinstance(m, nn.Linear):
-            init.normal(m.weight, std=1e-3)
-            if m.bias:
-                init.constant(m.bias, 0)
+def accuracy(output, target, topk=(1,)):
+    """Computes the accuracy over the k top predictions for the specified values of k"""
+    with torch.no_grad():
+        maxk = max(topk)
+        batch_size = target.size(0)
+
+        _, pred = output.topk(maxk, 1, True, True)
+        pred = pred.t()
+        correct = pred.eq(target.view(1, -1).expand_as(pred))
+
+        res = []
+        for k in topk:
+            correct_k = correct[:k].view(-1).float().sum(0, keepdim=True)
+            res.append(correct_k.mul_(100.0 / batch_size))
+    return res
+
+def save_checkpoint(state, is_best=False, filename=None):
+    if filename is None:
+        filename = os.path.join('./checkpoints', config.DATASET.NAME, config.MODEL.NAME, 'checkpoint-'+x.strftime("%d-%m")+'.pth.tar')
+    directory = os.path.dirname(filename)
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+    torch.save(state, filename)
+    if is_best:
+        shutil.copyfile(filename, os.path.join('./checkpoints', config.DATASET.NAME, config.MODEL.NAME,'model-best-'+x.strftime("%d-%m")+'pth.tar'))
+
+class AverageMeter(object):
+    """Computes and stores the average and current value"""
+    def __init__(self, name, fmt=':f'):
+        self.name = name
+        self.fmt = fmt
+        self.reset()
+
+    def reset(self):
+        self.val = 0
+        self.avg = 0
+        self.sum = 0
+        self.count = 0
+
+    def update(self, val, n=1):
+        self.val = val
+        self.sum += val * n
+        self.count += n
+        self.avg = self.sum / self.count
+
+    def __str__(self):
+        fmtstr = '{name} {val' + self.fmt + '} ({avg' + self.fmt + '})'
+        return fmtstr.format(**self.__dict__)
 
 
-#_, term_width = os.popen('stty size', 'r').read().split()
-#term_width = int(term_width)
-term_width, rows = shutil.get_terminal_size()
+class ProgressMeter(object):
+    def __init__(self, num_batches, meters, prefix=""):
+        self.batch_fmtstr = self._get_batch_fmtstr(num_batches)
+        self.meters = meters
+        self.prefix = prefix
 
-TOTAL_BAR_LENGTH = 65.
-last_time = time.time()
-begin_time = last_time
-def progress_bar(current, total, msg=None):
-    global last_time, begin_time
-    if current == 0:
-        begin_time = time.time()  # Reset for new bar.
+    def display(self, batch):
+        entries = [self.prefix + self.batch_fmtstr.format(batch)]
+        entries += [str(meter) for meter in self.meters]
+        print('\t'.join(entries))
 
-    cur_len = int(TOTAL_BAR_LENGTH*current/total)
-    rest_len = int(TOTAL_BAR_LENGTH - cur_len) - 1
+    def _get_batch_fmtstr(self, num_batches):
+        num_digits = len(str(num_batches // 1))
+        fmt = '{:' + str(num_digits) + 'd}'
+        return '[' + fmt + '/' + fmt.format(num_batches) + ']'
 
-    sys.stdout.write(' [')
-    for i in range(cur_len):
-        sys.stdout.write('=')
-    sys.stdout.write('>')
-    for i in range(rest_len):
-        sys.stdout.write('.')
-    sys.stdout.write(']')
 
-    cur_time = time.time()
-    step_time = cur_time - last_time
-    last_time = cur_time
-    tot_time = cur_time - begin_time
+def adjust_learning_rate(optimizer, epoch, args):
+    """Sets the learning rate to the initial LR decayed by 10 every 30 epochs"""
+    lr = args.lr * (0.1 ** (epoch // 30))
+    for param_group in optimizer.param_groups:
+        param_group['lr'] = lr
 
-    L = []
-    L.append('  Step: %s' % format_time(step_time))
-    L.append(' | Tot: %s' % format_time(tot_time))
-    if msg:
-        L.append(' | ' + msg)
-
-    msg = ''.join(L)
-    sys.stdout.write(msg)
-    for i in range(term_width-int(TOTAL_BAR_LENGTH)-len(msg)-3):
-        sys.stdout.write(' ')
-
-    # Go back to the center of the bar.
-    for i in range(term_width-int(TOTAL_BAR_LENGTH/2)+2):
-        sys.stdout.write('\b')
-    sys.stdout.write(' %d/%d ' % (current+1, total))
-
-    if current < total-1:
-        sys.stdout.write('\r')
-    else:
-        sys.stdout.write('\n')
-    sys.stdout.flush()
-
-def format_time(seconds):
-    days = int(seconds / 3600/24)
-    seconds = seconds - days*3600*24
-    hours = int(seconds / 3600)
-    seconds = seconds - hours*3600
-    minutes = int(seconds / 60)
-    seconds = seconds - minutes*60
-    secondsf = int(seconds)
-    seconds = seconds - secondsf
-    millis = int(seconds*1000)
-
-    f = ''
-    i = 1
-    if days > 0:
-        f += str(days) + 'D'
-        i += 1
-    if hours > 0 and i <= 2:
-        f += str(hours) + 'h'
-        i += 1
-    if minutes > 0 and i <= 2:
-        f += str(minutes) + 'm'
-        i += 1
-    if secondsf > 0 and i <= 2:
-        f += str(secondsf) + 's'
-        i += 1
-    if millis > 0 and i <= 2:
-        f += str(millis) + 'ms'
-        i += 1
-    if f == '':
-        f = '0ms'
-    return f
 
 class WarmUpLR(_LRScheduler):
     """warmup_training learning rate scheduler
@@ -145,7 +109,6 @@ class WarmUpLR(_LRScheduler):
         rate to base_lr * m / total_iters
         """
         return [base_lr * self.last_epoch / (self.total_iters + 1e-8) for base_lr in self.base_lrs]
-
 
 
 def density_entropy(X):
@@ -204,14 +167,14 @@ def summary(model, input_size):
                     summary[m_key]['output_shape'][0] = -1
 
                 wt_params = 0
-                if hasattr(module, 'weight') and 'conv' in m_key.lower():
+                if hasattr(module, 'weight'):
                     wt_params += torch.prod(torch.LongTensor(list(module.weight.size())))
                     summary[m_key]['trainable'] = module.weight.requires_grad
                 bias_params = 0
-                if hasattr(module, 'bias') and hasattr(module.bias, 'size') and 'conv' in m_key.lower():
+                if hasattr(module, 'bias') and hasattr(module.bias, 'size'):
                     bias_params +=  torch.prod(torch.LongTensor(list(module.bias.size())))
                 summary[m_key]['nb_params'] = wt_params + bias_params
-                
+
                 if 'conv' in m_key.lower():
                     summary[m_key]['MulC'] = wt_params * summary[m_key]['output_shape'][-1] * summary[m_key]['output_shape'][-2]
                 elif 'linear' in m_key.lower():
@@ -219,23 +182,23 @@ def summary(model, input_size):
                 else:
                     summary[m_key]['MulC'] = 0
 
-            if (not isinstance(module, nn.Sequential) and 
-               not isinstance(module, nn.ModuleList) and 
+            if (not isinstance(module, nn.Sequential) and
+               not isinstance(module, nn.ModuleList) and
                not (module == model)):
                 hooks.append(module.register_forward_hook(hook))
-                
+
         if torch.cuda.is_available():
             dtype = torch.cuda.FloatTensor
         else:
             dtype = torch.FloatTensor
-        
+
         # check if there are multiple inputs to the network
         if isinstance(input_size[0], (list, tuple)):
             x = [Variable(torch.rand(1,*in_size)).type(dtype) for in_size in input_size]
         else:
             x = Variable(torch.rand(1,*input_size)).type(dtype)
-            
-            
+
+
         # print(type(x[0]))
         # create properties
         summary = OrderedDict()
@@ -253,7 +216,7 @@ def summary(model, input_size):
 
         #print('----------------------------------------------------------------')
         line_new = '{:>20}  {:>25} {:>15} {:>20}'.format('Layer (type)', 'Output Shape', 'Param #', 'Muls #')
-        print(line_new)
+        #print(line_new)
         #print('======================================================================================')
         total_params = 0
         trainable_params = 0
@@ -266,14 +229,14 @@ def summary(model, input_size):
             if 'trainable' in summary[layer]:
                 if summary[layer]['trainable'] == True:
                     trainable_params += summary[layer]['nb_params']
-            print(line_new)
-        print('======================================================================================')
-        print('Total params: ' + str(total_params))
-        print('Trainable params: ' + str(trainable_params))
-        print('Non-trainable params: ' + str(total_params - trainable_params))
-        print('Total Multiplications: ' + str(total_comp))
-        print('----------------------------------------------------------------')        
-        line_new = '{:>25}  {:>25}'.format(str(trainable_params.numpy()), str(total_comp.numpy()))
-        print(line_new)
-        return trainable_params, total_comp
+            #print(line_new)
+        #print('======================================================================================')
+        #print('Total params: ' + str(total_params))
+        #print('Trainable params: ' + str(trainable_params))
+        #print('Non-trainable params: ' + str(total_params - trainable_params))
+        #print('Total Multiplications: ' + str(total_comp))
+        #print('----------------------------------------------------------------')        
+        #line_new = '{:>25}  {:>25}'.format(str(trainable_params.numpy()), str(total_comp.numpy()))
+        #print(line_new)
+        #return trainable_params, total_comp
         return trainable_params, total_comp

@@ -36,7 +36,6 @@ def get_layer_scores(layer):
                 X = np.asarray(pickle.load(infile))
             except FileNotFoundError:
                 print("{} does not exist.".format(filename))
-
         if class_label == 0:
             orig_imp_score = np.zeros([config.DATASET.NUM_CLASSES, X.shape[0]])
         orig_imp_score[class_label] = np.abs(X).mean(axis=1)
@@ -96,7 +95,9 @@ def get_clusters(layer, class_present, flag):
 def decompose_network():
 	
     layers = [0, 3, 7, 10, 14, 17, 20, 24, 27, 30, 34, 37, 40] #, 43]
-    decompose_layers = [0, 0, 1, 0, 1, 0, 0, 1, 0, 0, 1, 0, 1] #, 1]  	#flags to decide whether to decompose
+    #decompose_layers = [0, 0, 1, 0, 1, 0, 0, 1, 0, 0, 1, 0, 1] #, 1]  	#flags to decide whether to decompose
+    #decompose_layers = [0, 0, 1, 1, 1, 0, 1, 0, 0, 0, 0, 1, 1]
+    decompose_layers = [0, 0, 1, 1, 1, 0, 1, 0, 0, 0, 1, 0, 1]
     assert len(layers)==len(decompose_layers)
     N=len(layers)
 
