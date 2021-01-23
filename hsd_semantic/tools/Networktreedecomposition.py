@@ -48,7 +48,7 @@ def scores_processed(imp_score):
     return imp_normscore
 
 def get_clusters(layer, class_present, flag):
-   
+
     class_present = np.sort(np.asarray(class_present))
     imp_score = get_layer_scores(layer)
     imp_normscore = scores_processed(imp_score)
