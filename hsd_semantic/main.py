@@ -62,6 +62,7 @@ def main():
     if config.HIERARCHY.BETA >= 100 or config.SOLVER.XE:
         print("Standard CE loss\n")
         criterion = nn.CrossEntropyLoss()
+        soft_labels = None
     else:
         # Hierarchical cross entropy loss
         # Using soft labels

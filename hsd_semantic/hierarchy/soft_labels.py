@@ -1,7 +1,7 @@
 import numpy as np
 import scipy.linalg, scipy.spatial.distance
 from collections import OrderedDict
-from .semantic.class_hierarchy import ClassHierarchy
+from .class_hierarchy import ClassHierarchy
 
 
 def get_Softlabels(hierarchy_file, beta=20, class_list=None, is_a=False, str_ids=False):

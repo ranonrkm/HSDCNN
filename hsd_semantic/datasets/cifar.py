@@ -4,7 +4,7 @@ import torchvision
 import torchvision.transforms as transforms
 from hsd_semantic.config import config
 
-data_path = os.environ['DATA_PATH']
+data_path = os.path.join(config.DATASET.ROOT, 'cifar')
 
 def get_CifarDataLoader():
     transform_train = transforms.Compose([

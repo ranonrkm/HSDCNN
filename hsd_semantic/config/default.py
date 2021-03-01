@@ -24,7 +24,7 @@ _C.MODEL.HSD_CKPT = ''
 # Dataset
 # -----------------------------------------------------------------------------
 _C.DATASET = CN()
-#_C.DATASET.ROOT = 
+_C.DATASET.ROOT = '/scratch/16ee35016/data' 
 _C.DATASET.NAME = 'cifar10'
 _C.DATASET.NUM_CLASSES = 10
 
@@ -41,7 +41,7 @@ _C.CLUSTER.CPR = 0.5
 # Solver
 # -----------------------------------------------------------------------------
 _C.SOLVER = CN()
-_C.SOLVER.BATCH_SIZE = 8
+_C.SOLVER.BATCH_SIZE = 256
 _C.SOLVER.WORKERS = 4
 _C.SOLVER.XE = False
 _C.SOLVER.NUM_EPOCHS = 100
@@ -57,6 +57,7 @@ _C.SOLVER.SEPARATE = False  # for hsd-cnn, consider subnet predictions separatel
 _C.HIERARCHY = CN()
 _C.HIERARCHY.BETA = 10
 _C.HIERARCHY.ROOT = '/scratch/16ee35016/HSDCNN/hsd_semantic/hierarchy'
+_C.HIERARCHY.IMPACT_PATH = '/scratch/16ee35016/HSDCNN/hsd_semantic/impact_scores'
 """
 if __name__ == "__main__":
     import sys

@@ -41,7 +41,10 @@ def train(train_loader, model, criterion, soft_labels, optimizer, epoch, args):
             mask = torch.stack(mask, dim=0).cuda()
             outputs = mask * outputs
 
-        loss = criterion(outputs, labels, soft_labels)
+        if soft_labels is not None:
+            loss = criterion(outputs, labels, soft_labels)
+        else:
+            loss = criterion(outputs, labels)
 
         #train_loss += loss.item()
         outputs = F.log_softmax(outputs, dim=1)

@@ -34,7 +34,7 @@ class TreeNode:
 
 def get_layer_scores(layer):
     for class_label in range(config.DATASET.NUM_CLASSES):
-        filename = os.path.join(os.environ['IMPACT_PATH'], 
+        filename = os.path.join(config.HIERARCHY.IMPACT_PATH, 
                                 config.DATASET.NAME, 
                                 config.MODEL.NAME, 
                                 str(config.HIERARCHY.BETA), 
