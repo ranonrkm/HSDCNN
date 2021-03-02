@@ -28,9 +28,8 @@ from hsd_semantic.config import config
 
 class TreeNode:
     def __init__(self, key):
-        self.left = None
-        self.right = None
         self.val = key
+        self.children = []
 
 def get_layer_scores(layer):
     for class_label in range(config.DATASET.NUM_CLASSES):
@@ -153,12 +152,8 @@ def decompose_network():
             parent.append(current.val)
             classesPerNode[count] = clstr
             fmapsPerNode[count] = fmap_clstrs[i]
-            if i==0:
-                current.left = TreeNode(count)
-                que.append(current.left)
-            else:
-                current.right = TreeNode(count)
-                que.append(current.right)
+            current.children.append(TreeNode(count))
+            que.append(current.children[-1])
 
     assert len(que)==0
     print(layerAtPresent)

@@ -27,18 +27,22 @@ class vgg_hsd(nn.Module):
         while(node_que):
             p = node_que.pop(0)
             x = feat_que.pop(0)
-            if p.left is None and p.right is None:
+            if not p.children:
                 feat_que.append(x.view(x.size(0), -1))
                 continue
+            for child in p.children:
+                node_que.append(child)
+                feat_que.append(self.features[child.val](x))
+            '''
             if p.left is not None:
                 node_que.append(p.left)
                 feat_que.append(self.features[p.left.val](x))
             if p.right is not None:
                 node_que.append(p.right)
                 feat_que.append(self.features[p.right.val](x))
-        
+            '''
         out = torch.cat([self.classifier[i](feat_que[i]) for i in range(len(feat_que))], 1)
-        out = torch.index_select(out, 1, self.indices.cuda())
+        #out = torch.index_select(out, 1, self.indices.cuda())
 
         return out
         

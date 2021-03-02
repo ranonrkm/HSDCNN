@@ -16,4 +16,4 @@ source activate /home/16ee35016/anaconda2/envs/HSD
 cd $SCRATCH
 cd HSDCNN/hsd_semantic
 
-python -u main.py -p 1000 > test_1.out
+python -u main.py -H -p 1000 > test_1.out
