@@ -12,7 +12,7 @@ def is_vgg(name):
 
 def get_network(in_planes=None):
     
-    num_classes = 100 if config.DATASET.NAME == 'cifar100' else 10
+    num_classes = config.DATASET.NUM_CLASSES 
     model = None
     name = config.MODEL.NAME
     if is_resnet(name):

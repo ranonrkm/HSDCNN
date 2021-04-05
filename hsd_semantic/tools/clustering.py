@@ -24,6 +24,7 @@ import torch.nn.functional as F
 import torch.backends.cudnn as cudnn
 
 from hsd_semantic.models import get_network
+from hsd_semantic.hierarchy.class_hierarchy import ClassHierarchy
 from hsd_semantic.config import config
 
 class TreeNode:
@@ -60,7 +61,7 @@ def get_cluster_no(imp_normscore):
     link_method = config.CLUSTER.LINK_METHOD
     if imp_normscore.shape[0]<=2:
         return 2
-    for i in range(2, imp_normscore.shape[0]):
+    for i in range(2, min(3, imp_normscore.shape[0])):
         ag = AgglomerativeClustering(n_clusters=i, affinity=dist_metric, linkage=link_method).fit(imp_normscore)
         prediction = ag.labels_
         sil_score.append(silhouette_score(imp_normscore, prediction)) 
@@ -79,7 +80,7 @@ def get_clusters(layer, class_present, flag):
         flag = 0
     
     if flag:
-        n_clust = get_cluster_no(imp_normscore)
+        n_clust = 2 if config.CLUSTER.NCLUST==2 else get_cluster_no(imp_normscore)
         dist_metric = config.CLUSTER.DIST_METRIC
         link_method = config.CLUSTER.LINK_METHOD
         ag = AgglomerativeClustering(n_clusters=n_clust, affinity=dist_metric,
@@ -269,4 +270,23 @@ def decompose_network():
     print('cl_arr_ind')
     print(cl_arr_ind)
 
-    return convModel, linearModel, cl_arr_ind, subnet_cls, root 
+    return convModel, linearModel, cl_arr_ind, subnet_cls, root
+
+
+def cluster_quality(cls_clstrs):
+    num_classes = config.DATASET.NUM_CLASSES
+    distances = np.zeros((num_classes, num_classes))
+    hierarchy_file = os.path.join(config.HIERARCHY.ROOT, 
+                             config.DATASET.NAME + "-Hierarchy",
+                             "parent-child.txt")
+    hierarchy = ClassHierarchy.from_file(hierarchy_file)
+    for i in range(int(num_classes/2)):
+        for j in range(i+1, num_classes):
+            distances[i][j] = distances[j][i] = hierarchy.lcs_height(str(i),str(j))
+ 
+    labels = np.zeros(num_classes)
+    for i, clstr in enumerate(cls_clstrs):
+        for c in clstr:
+            labels[c] = i
+    clusterQ = silhouette_score(distances, labels, metric="precomputed")
+    return clusterQ 

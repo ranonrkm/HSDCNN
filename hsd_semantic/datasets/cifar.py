@@ -34,7 +34,7 @@ def get_CifarDataLoader():
     return trainloader, testloader
 
 
-def get_classwise_DataLoader():
+def get_classwise_DataLoader(batch_size=128):
     transform_train = transforms.Compose([
         transforms.RandomCrop(32, padding=4),
         transforms.RandomHorizontalFlip(),
@@ -45,7 +45,7 @@ def get_classwise_DataLoader():
         trainset = torchvision.datasets.CIFAR100(root=data_path, train=True, download=True, transform=transform_train)
     else:
         trainset = torchvision.datasets.CIFAR10(root=data_path, train=True, download=True, transform=transform_train)
-
+    trainloader = torch.utils.data.DataLoader(trainset, batch_size=batch_size, shuffle=True, num_workers=0)
     classwise_trainset = {}
     for class_id in range(config.DATASET.NUM_CLASSES):
         class_images = []

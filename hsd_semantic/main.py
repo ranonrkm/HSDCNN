@@ -11,7 +11,7 @@ from hsd_semantic.models.subnets import get_hsd
 from hsd_semantic.hierarchy import get_Softlabels
 from hsd_semantic.tools import *
 from hsd_semantic.utils import *
-from hsd_semantic.config import config
+from hsd_semantic.config import config, update_config
 
 import time
 import os
@@ -34,23 +34,48 @@ def main():
                         help='evaluate model on validation set')
     parser.add_argument('-p', '--print-freq', default=10, type=int,
                     metavar='N', help='print frequency (default: 10)')
+    parser.add_argument('--pretrained', dest='pretrained', action='store_true',
+                    help='use pretrained network')
+    parser.add_argument('--resume', default='', type=str, metavar='PATH',
+                    help='path to latest checkpoint (default: none)')
+    parser.add_argument('--cfg',
+                        help='experiment configure file name',
+                        required=True,
+                        type=str)
+    parser.add_argument('opts',
+                        help="Modify config options using the command-line",
+                        default=None,
+                        nargs=argparse.REMAINDER)
     args = parser.parse_args()
+    update_config(config, args)
 
     if args.hsd == False:
         print('Undecomposed Network')
         net = get_network()
-        try:
-            net.load_state_dict(torch.load(config.MODEL.CKPT))
-        except FileNotFoundError:
-            pass
-
+        if args.pretrained:
+            print(config.MODEL.CKPT)
+            print(config.DATASET.NUM_CLASSES)
+            print('loading pretrained network...')
+            try:
+                net.load_state_dict(torch.load(config.MODEL.CKPT)['state_dict'])
+                print('Using pre-trained network...')
+            except:
+                try:
+                    net.load_state_dict(torch.load(config.MODEL.CKPT))
+                    print('Using pre-trained network...')
+                except:
+                    print('can not load pretrained network')
+                    pass
     else:
         print('hsd')
         net = get_hsd()
-        try:
-            net.load_state_dict(torch.load(config.MODEL.HSD_CKPT))
-        except FileNotFoundError:
-            pass
+        if args.pretrained:
+            try:
+                net.load_state_dict(torch.load(config.MODEL.HSD_CKPT))
+                print('Using pre-trained network...')
+            except:
+                print('can not load pretrained network')
+                pass
 
         # TODO: Add code for masking out subnetworks based on classes of interest
 
@@ -83,9 +108,22 @@ def main():
     global best_acc1
     global best_acc5
     if args.evaluate:
-        validate(val_loader, net, criterion, args)
+        validate(val_loader, net, criterion=nn.CrossEntropyLoss(), args=args, soft_labels=None)
         sys.exit(0)
         #return
+
+    if args.resume:
+        if os.path.isfile(args.resume):
+            print("=> loading checkpoint '{}'".format(args.resume))
+            checkpoint = torch.load(args.resume)
+            args.start_epoch = checkpoint['epoch']
+            best_acc1 = checkpoint['best_acc1'].cuda()
+            model.load_state_dict(checkpoint['state_dict'])
+            optimizer.load_state_dict(checkpoint['optimizer'])
+            print("=> loaded checkpoint '{}' (epoch {})"
+                  .format(args.resume, checkpoint['epoch']))
+        else:
+            print("=> no checkpoint found at '{}'".format(args.resume))
 
     for epoch in range(config.SOLVER.NUM_EPOCHS):
         #adjust_learning_rate(optimizer, epoch, args)

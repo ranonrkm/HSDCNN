@@ -37,13 +37,13 @@ def accuracy(output, target, topk=(1,)):
 
 def save_checkpoint(state, is_best=False, filename=None):
     if filename is None:
-        filename = os.path.join('./checkpoints', config.DATASET.NAME, config.MODEL.NAME, 'checkpoint-'+x.strftime("%d-%m")+'.pth.tar')
+        filename = os.path.join('./checkpoints', config.DATASET.NAME, config.MODEL.NAME, str(config.HIERARCHY.BETA), 'checkpoint-'+x.strftime("%d-%m")+'.pth.tar')
     directory = os.path.dirname(filename)
     if not os.path.exists(directory):
         os.makedirs(directory)
     torch.save(state, filename)
     if is_best:
-        shutil.copyfile(filename, os.path.join('./checkpoints', config.DATASET.NAME, config.MODEL.NAME,'model-best-'+x.strftime("%d-%m")+'pth.tar'))
+        shutil.copyfile(filename, os.path.join('./checkpoints', config.DATASET.NAME, config.MODEL.NAME,str(config.HIERARCHY.BETA),'model-best-'+x.strftime("%d-%m")+'.pth.tar'))
 
 class AverageMeter(object):
     """Computes and stores the average and current value"""

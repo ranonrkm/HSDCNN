@@ -76,7 +76,6 @@ def validate(val_loader, model, criterion, soft_labels, args):
         len(val_loader),
         [batch_time, losses, top1, top5],
         prefix='Test: ')
-
     # switch to evaluate mode
     model.eval()
     with torch.no_grad():
@@ -86,6 +85,7 @@ def validate(val_loader, model, criterion, soft_labels, args):
             images, labels = images.cuda() , labels.cuda()
 
             outputs = model(images)
+            """
             if args.hsd and args.separate:
                 mask = []
                 labels_list = labels.tolist()
@@ -96,7 +96,12 @@ def validate(val_loader, model, criterion, soft_labels, args):
                             break
                 mask = torch.stack(mask, dim=0).cuda()
                 outputs = mask * outputs
-            loss = criterion(outputs, labels, soft_labels)            
+            """
+            if soft_labels is not None:
+                loss = criterion(outputs, labels, soft_labels)            
+            else:
+                loss = criterion(outputs, labels)
+            outputs = F.log_softmax(outputs, dim=1)
             acc1, acc5 = accuracy(outputs, labels, topk=(1, 5))
             losses.update(loss.item(), images.size(0))
             top1.update(acc1[0], images.size(0))
