@@ -4,8 +4,12 @@ MODEL:
 DATASET:
     NAME : 'cifar100'
     NUM_CLASSES : 100
+CLUSTER:
+    NCLUST : 3
 SOLVER:
-    XE : False
+    XE : True
+    SEPARATE : True
+    BASE_LR : 1e-3
 HIERARCHY:
     BETA : 25
 
