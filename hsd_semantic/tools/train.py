@@ -8,6 +8,11 @@ import sys
 from hsd_semantic.utils import *
 CUDA_LAUNCH_BLOCKING=1
 
+def find(class_cluster, label):
+    for i, C in enumerate(class_cluster):
+        if label in C:
+            return i
+    return -1
 
 def train(train_loader, model, criterion, soft_labels, optimizer, epoch, args):
     batch_time = AverageMeter('Time', ':6.3f')
@@ -20,6 +25,9 @@ def train(train_loader, model, criterion, soft_labels, optimizer, epoch, args):
         [batch_time, data_time, losses, top1, top5],
         prefix="Epoch: [{}]".format(epoch))
 
+    if args.hsd:
+        num_clusters = len(model.subnet_classes)
+        class_clusters = [tuple(C) for C in model.subnet_classes]
     # switch to train mode
     model.train()
 
@@ -29,8 +37,14 @@ def train(train_loader, model, criterion, soft_labels, optimizer, epoch, args):
         images, labels = images.cuda(), labels.cuda()
 
         optimizer.zero_grad()
-        outputs = model(images)
-        if args.hsd and args.separate:
+        if args.hsd and config.SOLVER.SEPARATE:
+            subnet_id = find(class_clusters, labels[0].item())
+            outputs = model(images, subnet_id)
+            labels, soft_labels = convert(class_clusters[subnet_id], labels, soft_labels)
+        else:
+            outputs = model(images)
+        """
+        if args.hsd and config.SOLVER.SEPARATE:
             mask = []
             labels_list = labels.tolist()
             for label in labels_list:
@@ -40,7 +54,7 @@ def train(train_loader, model, criterion, soft_labels, optimizer, epoch, args):
                         break
             mask = torch.stack(mask, dim=0).cuda()
             outputs = mask * outputs
-
+        """
         if soft_labels is not None:
             loss = criterion(outputs, labels, soft_labels)
         else:
@@ -76,15 +90,22 @@ def validate(val_loader, model, criterion, soft_labels, args):
         len(val_loader),
         [batch_time, losses, top1, top5],
         prefix='Test: ')
+
+    if args.hsd:
+        num_clusters = len(model.subnet_classes) 
+        class_clusters = [tuple(C) for C in model.subnet_classes]
     # switch to evaluate mode
     model.eval()
     with torch.no_grad():
         end = time.time()
         for i,(images, labels) in enumerate(val_loader):
-
             images, labels = images.cuda() , labels.cuda()
-
-            outputs = model(images)
+            if args.hsd and config.SOLVER.SEPARATE:
+                subnet_id = find(class_clusters, labels[0].item())
+                outputs = model(images, subnet_id)
+                labels, soft_labels = convert(class_clusters[subnet_id], labels, soft_labels)
+            else:
+                outputs = model(images)
             """
             if args.hsd and args.separate:
                 mask = []

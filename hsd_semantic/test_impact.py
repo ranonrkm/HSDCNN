@@ -1,5 +1,6 @@
 from __future__ import print_function
 import torch
+import torchvision
 import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
@@ -16,7 +17,7 @@ import copy
 import argparse
 
 from hsd_semantic.models import get_network
-from hsd_semantic.datasets.cifar import get_classwise_DataLoader
+from hsd_semantic.datasets.cifar import get_transform, subnetwise_Dataset
 from hsd_semantic.config import config, update_config
 
 class impactModel(nn.Module):
@@ -50,7 +51,6 @@ class Scores():
     def __init__(self, net, impact_data_path, write=True):
 
         self.net = net
-        self.dataset = get_classwise_DataLoader()
         if self.net.features:
             layers = list(self.net.features.children())
             self.layer_channels = np.asarray([layers[layer].out_channels 
@@ -59,7 +59,14 @@ class Scores():
         else:
             print('model not implemented')
             sys.exit(0)
-        
+        if config.DATASET.NAME == 'cifar100':
+            data_path = os.path.join(config.DATASET.ROOT, 'cifar')
+            self.dataset =  torchvision.datasets.CIFAR100(root=data_path, train=True, download=True, transform=get_transform(train=True)) 
+        elif config.DATASET.NAME == 'cifar10':
+            data_path = os.path.join(config.DATASET.ROOT, 'cifar')
+            self.dataset =  torchvision.datasets.CIFAR10(root=data_path, train=True, download=True, transform=get_transform(train=True))
+        else:
+            sys.exit('Not Implemented')
         self.scores = {}
         self.write_flag = write
         self.one_hot = {}
@@ -76,24 +83,26 @@ class Scores():
         out_channels = self.layer_channels[layer]
         lyr_score = torch.zeros(config.DATASET.NUM_CLASSES, out_channels) 
 
+        datasets = subnetwise_Dataset(self.dataset, [[i] for i in range(config.DATASET.NUM_CLASSES)])
+
         for class_id in range(config.DATASET.NUM_CLASSES):
-            num_samples = min(self.dataset[class_id].__len__(), max_samples)
+            num_samples = min(datasets[class_id].__len__(), max_samples)
             if num_samples < 1:
                 continue
             print('Class :', class_id, 'in layer ', layer, 'is starting')
 
             imp_scores = torch.zeros(int(out_channels), num_samples)
-            dataloader = torch.utils.data.DataLoader(self.dataset[class_id], batch_size=1, 
-                                                        shuffle=True, num_workers=4)
+            dataloader = torch.utils.data.DataLoader(datasets[class_id], batch_size=1, 
+                                                        shuffle=False, num_workers=4)
             
             impact_net.eval()
             impact_net.cuda()
-            for batch_idx, (input, label) in enumerate(dataloader):
+            for batch_idx, (image, label) in enumerate(dataloader):
                 if batch_idx >= max_samples - 1:
                     break
-                input = input.cuda()
+                image = image.cuda()
                 impact_net.zero_grad()
-                out = impact_net(input)
+                out = impact_net(image)
                 pred = F.softmax(out, dim=1)
                 pred = pred.masked_select(self.one_hot[class_id].cuda())
                 pred.backward()

@@ -5,7 +5,7 @@ import torch.nn.functional as F
 import torch.optim as optim
 from torch.optim import lr_scheduler
 
-from hsd_semantic.datasets import get_CifarDataLoader
+from hsd_semantic.datasets import get_CifarDataLoader, subnetwise_DataLoader
 from hsd_semantic.models import get_network
 from hsd_semantic.models.subnets import get_hsd
 from hsd_semantic.hierarchy import get_Softlabels
@@ -28,8 +28,6 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('-H', '--hsd', dest='hsd', action='store_true',
                     help='train or evaluate hsd model')
-    parser.add_argument('-S', '--separate', dest='separate', action='store_true',
-                    help='train subnetworks alltogether ot separately')
     parser.add_argument('-e', '--evaluate', dest='evaluate', action='store_true',
                         help='evaluate model on validation set')
     parser.add_argument('-p', '--print-freq', default=10, type=int,
@@ -81,7 +79,10 @@ def main():
 
     net = net.cuda()
 
-    train_loader, val_loader = get_CifarDataLoader()
+    if args.hsd and config.SOLVER.SEPARATE:
+        train_loader, val_loader = subnetwise_DataLoader(net.subnet_classes)
+    else: 
+        train_loader, val_loader = get_CifarDataLoader()
     print("################Data-sets loaded####################\n")
 
     if config.HIERARCHY.BETA >= 100 or config.SOLVER.XE:

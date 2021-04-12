@@ -1,0 +1,14 @@
+MODEL:
+    CKPT : "/scratch/16ee35016/HSDCNN/hsd_semantic/checkpoints/cifar10/vgg16/XE/model-best-11-04.pth.tar"
+    HSD_CKPT :  ""
+DATASET:
+    NAME : 'cifar10'
+    NUM_CLASSES : 10
+CLUSTER:
+    NCLUST : 2
+SOLVER:
+    XE : True
+    BASE_LR : 1e-1
+HIERARCHY:
+    BETA : 200
+

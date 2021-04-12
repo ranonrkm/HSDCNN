@@ -19,10 +19,17 @@ from hsd_semantic.config import config
 
 x = datetime.datetime.now()
 
+def convert(class_cluster, labels, soft_labels=None):
+    mapping = {class_cluster[i] : i for i in range(len(class_cluster))}
+    labels = labels.cpu().tolist()
+    labels_new = torch.tensor([mapping[label] for label in labels]).type(torch.int64).cuda()
+    return labels_new, soft_labels
+    
+
 def accuracy(output, target, topk=(1,)):
     """Computes the accuracy over the k top predictions for the specified values of k"""
     with torch.no_grad():
-        maxk = max(topk)
+        maxk = min(max(topk), output.shape[-1])
         batch_size = target.size(0)
 
         _, pred = output.topk(maxk, 1, True, True)

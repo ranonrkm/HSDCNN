@@ -1,5 +1,5 @@
 MODEL:
-    CKPT : "/scratch/16ee35016/HSDCNN/hsd_semantic/checkpoints/cifar10/vgg16/10/model-best-04-03.pth.tar"
+    CKPT : "/scratch/16ee35016/HSDCNN/hsd_semantic/checkpoints/cifar10/vgg16/100/model-best-04-03.pth.tar"
     HSD_CKPT :  ""
 DATASET:
     NAME : 'cifar10'
@@ -11,5 +11,5 @@ SOLVER:
     SEPARATE : True
     BASE_LR : 1e-3
 HIERARCHY:
-    BETA : 10 
+    BETA : 100
 

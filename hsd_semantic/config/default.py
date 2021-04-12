@@ -16,8 +16,8 @@ _C.CUDNN.ENABLED = True
 # -----------------------------------------------------------------------------
 _C.MODEL = CN()
 _C.MODEL.NAME = 'vgg16'
-#_C.MODEL.CKPT = '/scratch/16ee35016/hsd_semantic/checkpoint/dump/interpretable/cifar10/vgg16/vgg16-1205-10.pth' 
-_C.MODEL.CKPT = '/scratch/16ee35016/HSDCNN/hsd_semantic/checkpoints/cifar100/vgg16/30/model-best-13-03.pth.tar' 
+_C.MODEL.CKPT = '/scratch/16ee35016/hsd_semantic/checkpoint/dump/interpretable/cifar10/vgg16/vgg16-1205-10.pth' 
+#_C.MODEL.CKPT = '/scratch/16ee35016/HSDCNN/hsd_semantic/checkpoints/cifar100/vgg16/30/model-best-13-03.pth.tar' 
 #_C.MODEL.CKPT = '/scratch/16ee35016/HSDCNN/hsd_semantic/checkpoints/cifar10/vgg16/30/model-best-04-03.pth.tar'
 _C.MODEL.CKPT_PATH = '/scratch/16ee35016/checkpoints' 
 _C.MODEL.HSD_CKPT = ''
@@ -59,7 +59,7 @@ _C.SOLVER.SEPARATE = False  # for hsd-cnn, consider subnet predictions separatel
 # Hierarchy
 # -----------------------------------------------------------------------------
 _C.HIERARCHY = CN()
-_C.HIERARCHY.BETA = 30
+_C.HIERARCHY.BETA = 10
 _C.HIERARCHY.ROOT = '/scratch/16ee35016/HSDCNN/hsd_semantic/hierarchy'
 _C.HIERARCHY.IMPACT_PATH = '/scratch/16ee35016/HSDCNN/hsd_semantic/impact_scores'
 

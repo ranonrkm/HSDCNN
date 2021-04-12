@@ -262,7 +262,7 @@ def decompose_network():
     subnet_cls = []
     for node in nodesAtLastLayer:
         print("{} : {}".format(node, classesPerNode[node]))
-        subnet_cls.append(classesPerNode[node])
+        subnet_cls.append(list(classesPerNode[node]))
         cl_end.extend(list(classesPerNode[node]))
 
     cl_arr = np.asarray(cl_end).reshape(1, config.DATASET.NUM_CLASSES)[0,:]
@@ -270,8 +270,19 @@ def decompose_network():
     print('cl_arr_ind')
     print(cl_arr_ind)
 
-    return convModel, linearModel, cl_arr_ind, subnet_cls, root
+    subnets = []
+    get_subnets(root, curr=[], subnets=subnets)
+    return convModel, linearModel, cl_arr_ind, subnet_cls, subnets, root
 
+def get_subnets(root, curr, subnets):
+    curr.append(root.val)
+    if not root.children:
+        subnets.append(copy.deepcopy(curr))
+        curr.pop(-1)
+        return
+    for child in root.children:
+        get_subnets(child, curr, subnets)
+    curr.pop(-1)
 
 def cluster_quality(cls_clstrs):
     num_classes = config.DATASET.NUM_CLASSES
