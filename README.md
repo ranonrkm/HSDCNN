@@ -1,7 +1,7 @@
 
 # Introduction
 
-This repository contains the implementaion for **Hierarchically Self-Decomposing Networks**
+This repository contains the implementaion for **Taxonomy Driven Learning Of Semantic Hierarchy Of Classes** published in IEEE International Conference on Image Processing (ICIP), 2022. The link to the paper: https://ieeexplore.ieee.org/abstract/document/9898007
 
 ## Setup
 
